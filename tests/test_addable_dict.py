@@ -1,4 +1,5 @@
 import numpy as np  # type: ignore
+import pytest
 from dnips.addable_dict import AddableDict, Addable, dict_to_numpy
 from typing import Counter, Union
 
@@ -62,6 +63,31 @@ class TestDictToNumpy:
 
         exp = np.array(
             [[[1, 2], [0, 0], [0, 3.0]], [[4, 0], [0, 5], [0, 0]]], dtype=np.float
+        )
+
+        np.testing.assert_equal(res, exp)
+
+    def test_ignore_unfound_keys(self) -> None:
+        dict1 = {
+            "DOESNT EXIST": {
+                "dim2_a": {"dim3_a": 1, "dim3_b": 2},
+                "dim2_c": {"dim3_b": 3},
+            },
+            "dim1_b": {"dim2_a": {"dim3_a": 4}, "dim2_b": {"dim3_b": 5}},
+        }
+
+        orderings = [
+            ["dim1_a", "dim1_b"],
+            ["dim2_a", "dim2_b", "dim2_c"],
+            ["dim3_a", "dim3_b"],
+        ]
+
+        with pytest.raises(ValueError):
+            _ = dict_to_numpy(dict1, orderings)
+
+        res = dict_to_numpy(dict1, orderings, ignore_not_found_keys=True)
+        exp = np.array(
+            [[[0, 0], [0, 0], [0, 0]], [[4, 0], [0, 5], [0, 0]]], dtype=np.float
         )
 
         np.testing.assert_equal(res, exp)

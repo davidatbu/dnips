@@ -45,7 +45,10 @@ class AddableDict(Dict[_K, _Addable]):
 
 
 def _fill_array_with_dict(
-    d: Dict[str, Any], orderings: Sequence[List[str]], array_to_fill: np.ndarray
+    d: Dict[_T, Any],
+    orderings: Sequence[List[_T]],
+    array_to_fill: np.ndarray,
+    ignore_not_found_keys: bool,
 ) -> None:
     """Convert a dict of any depth into a numpy array, where keys at a specific depth
     correspond to a specific numpy dimension."""
@@ -55,23 +58,32 @@ def _fill_array_with_dict(
         for k, v in d.items():
             try:
                 k_idx = ordering.index(k)
-            except IndexError:
-                continue
+            except ValueError as e:
+                if ignore_not_found_keys:
+                    continue
+                else:
+                    raise e
             else:
                 array_to_fill[k_idx] = v
     else:
         for k, v in d.items():
             try:
                 k_idx = ordering.index(k)
-            except IndexError:
-                continue
+            except ValueError as e:
+                if ignore_not_found_keys:
+                    continue
+                else:
+                    raise e
             else:
-                _fill_array_with_dict(v, orderings[1:], array_to_fill[k_idx])
+                _fill_array_with_dict(
+                    v, orderings[1:], array_to_fill[k_idx], ignore_not_found_keys
+                )
 
 
 def dict_to_numpy(
-    d: Any,
-    orderings: Sequence[List[str]],
+    d: Dict[_T, Any],
+    orderings: Sequence[List[Any]],
+    ignore_not_found_keys: bool = False,
     fill_value: np.generic = 0.0,
     dtype: np.dtype = np.float,
 ) -> np.ndarray:
@@ -79,5 +91,7 @@ def dict_to_numpy(
     correspond to a specific numpy dimension."""
     shape = [len(ordering) for ordering in orderings]
     res = np.full(shape=shape, fill_value=fill_value, dtype=dtype)
-    _fill_array_with_dict(d, orderings, res)
+    _fill_array_with_dict(
+        d, orderings, res, ignore_not_found_keys=ignore_not_found_keys
+    )
     return res
