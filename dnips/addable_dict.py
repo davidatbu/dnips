@@ -2,11 +2,6 @@ from typing import (
     TypeVar,
     Dict,
     Any,
-    Iterable,
-    Mapping,
-    Tuple,
-    overload,
-    Callable,
     Sequence,
     List,
 )
@@ -58,22 +53,22 @@ def _fill_array_with_dict(
         for k, v in d.items():
             try:
                 k_idx = ordering.index(k)
-            except ValueError as e:
+            except ValueError:
                 if ignore_not_found_keys:
                     continue
                 else:
-                    raise e
+                    raise ValueError(f"Key {k} not found in ordering, but ignore_not_found_keys is False.")
             else:
                 array_to_fill[k_idx] = v
     else:
         for k, v in d.items():
             try:
                 k_idx = ordering.index(k)
-            except ValueError as e:
+            except ValueError:
                 if ignore_not_found_keys:
                     continue
                 else:
-                    raise e
+                    raise ValueError(f"Key {k} not found in ordering, but ignore_not_found_keys is False.")
             else:
                 _fill_array_with_dict(
                     v, orderings[1:], array_to_fill[k_idx], ignore_not_found_keys
