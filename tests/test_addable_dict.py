@@ -59,13 +59,14 @@ class TestDictToNumpy:
             ["dim2_a", "dim2_b", "dim2_c"],
             ["dim3_a", "dim3_b"],
         ]
-        res = dict_to_numpy(dict1, orderings)
+        res, keys_not_found = dict_to_numpy(dict1, orderings)
 
         exp = np.array(
             [[[1, 2], [0, 0], [0, 3.0]], [[4, 0], [0, 5], [0, 0]]], dtype=np.float
         )
 
         np.testing.assert_equal(res, exp)
+        assert keys_not_found == [None] * 3
 
     def test_ignore_unfound_keys(self) -> None:
         dict1 = {
@@ -85,9 +86,44 @@ class TestDictToNumpy:
         with pytest.raises(ValueError):
             _ = dict_to_numpy(dict1, orderings)
 
-        res = dict_to_numpy(dict1, orderings, ignore_not_found_keys=True)
+        res, keys_not_found = dict_to_numpy(
+            dict1, orderings, ignore_not_found_keys=[True, False, False]
+        )
         exp = np.array(
             [[[0, 0], [0, 0], [0, 0]], [[4, 0], [0, 5], [0, 0]]], dtype=np.float
         )
+        assert keys_not_found == [["DOESNT EXIST"], None, None]
+
+        np.testing.assert_equal(res, exp)
+
+    def test_transform_func(self) -> None:
+        dict1 = {
+            "DOESNT EXIST": {
+                "dim2_a": {"dim3_a": 1, "dim3_b": 2},
+                "dim2_c": {"dim3_b": 3},
+            },
+            "dim1_b": {"dim2_a": {"dim3_a": 4}, "dim2_b": {"dim3_b": 5}},
+        }
+
+        orderings = [
+            ["dim1_a", "dim1_b"],
+            ["dim2_a", "dim2_b", "dim2_c"],
+            ["dim3_a", "dim3_b"],
+        ]
+
+        res, keys_not_found = dict_to_numpy(
+            dict1,
+            orderings,
+            ignore_not_found_keys=[True, False, False],
+            transform_key_funcs=[
+                lambda x: x if x != "DOESNT EXIST" else "dim1_a",
+                lambda x: x,
+                lambda x: x,
+            ],
+        )
+        exp = np.array(
+            [[[1, 2], [0, 0], [0, 3.0]], [[4, 0], [0, 5], [0, 0]]], dtype=np.float
+        )
+        assert keys_not_found == [[], None, None]
 
         np.testing.assert_equal(res, exp)
