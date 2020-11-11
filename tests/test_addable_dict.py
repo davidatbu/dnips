@@ -59,13 +59,13 @@ class TestDictToNumpy:
             ["dim2_a", "dim2_b", "dim2_c"],
             ["dim3_a", "dim3_b"],
         ]
-        res, keys_not_found = dict_to_numpy(dict1, orderings)
+        res, keys_not_found = dict_to_numpy(dict1.items(), orderings, dtype=np.float16)
 
         exp = np.array(
-            [[[1, 2], [0, 0], [0, 3.0]], [[4, 0], [0, 5], [0, 0]]], dtype=np.float
+            [[[1, 2], [0, 0], [0, 3.0]], [[4, 0], [0, 5], [0, 0]]], dtype=np.float16
         )
 
-        np.testing.assert_equal(res, exp)
+        np.testing.assert_array_equal(res, exp)
         assert keys_not_found == [None] * 3
 
     def test_ignore_unfound_keys(self) -> None:
@@ -84,17 +84,17 @@ class TestDictToNumpy:
         ]
 
         with pytest.raises(ValueError):
-            _ = dict_to_numpy(dict1, orderings)
+            _ = dict_to_numpy(dict1.items(), orderings)
 
         res, keys_not_found = dict_to_numpy(
-            dict1, orderings, ignore_not_found_keys=[True, False, False]
+            dict1.items(), orderings, ignore_not_found_keys=[True, False, False], dtype=np.float16
         )
         exp = np.array(
-            [[[0, 0], [0, 0], [0, 0]], [[4, 0], [0, 5], [0, 0]]], dtype=np.float
+            [[[0, 0], [0, 0], [0, 0]], [[4, 0], [0, 5], [0, 0]]], dtype=np.float16
         )
         assert keys_not_found == [["DOESNT EXIST"], None, None]
 
-        np.testing.assert_equal(res, exp)
+        np.testing.assert_array_equal(res, exp)
 
     def test_transform_func(self) -> None:
         dict1 = {
@@ -112,7 +112,7 @@ class TestDictToNumpy:
         ]
 
         res, keys_not_found = dict_to_numpy(
-            dict1,
+            dict1.items(),
             orderings,
             ignore_not_found_keys=[True, False, False],
             transform_key_funcs=[
@@ -120,10 +120,31 @@ class TestDictToNumpy:
                 lambda x: x,
                 lambda x: x,
             ],
+            dtype=float
         )
         exp = np.array(
-            [[[1, 2], [0, 0], [0, 3.0]], [[4, 0], [0, 5], [0, 0]]], dtype=np.float
+            [[[1, 2], [0, 0], [0, 3.0]], [[4, 0], [0, 5], [0, 0]]], dtype=float
         )
         assert keys_not_found == [[], None, None]
 
-        np.testing.assert_equal(res, exp)
+        np.testing.assert_array_equal(res, exp)
+
+        # Transform value func
+        res, keys_not_found = dict_to_numpy(
+            dict1.items(),
+            orderings,
+            ignore_not_found_keys=[True, False, False],
+            transform_key_funcs=[
+                lambda x: x if x != "DOESNT EXIST" else "dim1_a",
+                lambda x: x,
+                lambda x: x,
+            ],
+            transform_value_func=lambda x: x*10,
+            dtype=float
+        )
+        exp = np.array(
+            [[[10, 20], [0, 0], [0, 30]], [[40, 0], [0, 50], [0, 0]]], dtype=float
+        )
+        assert keys_not_found == [[], None, None]
+
+        np.testing.assert_array_equal(res, exp)
