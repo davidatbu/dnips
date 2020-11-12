@@ -24,3 +24,6 @@ def test_ordering() -> None:
     assert ordering.indices['a'] == 0
 
     assert 'abcdefg' == ''.join(i for i in ordering) 
+
+    assert ordering == Ordering('abcdefg')
+    assert ordering != Ordering('abcdeg')

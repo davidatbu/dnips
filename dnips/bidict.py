@@ -40,18 +40,23 @@ class BiDict(MutableMapping[_K, _V]):
         rev_dict: Dict[_V, _K] = None,
     ) -> None:
         if isinstance(__item, dict):
-            self._dict = dict(__item)
+            self._dict = __item
         else:
             self._dict = {k: v for k, v in __item}
 
+        self._rev_dict: 'Dict[_V, _K]' # help pyright
         if rev_dict is None:
             self._rev_dict = {v: k for k, v in self._dict.items()}
         else:
-            self._rev_dict = dict(rev_dict)
+            self._rev_dict = rev_dict
 
     @cached_property
     def rev(self) -> BiDict[_V, _K]:
         return BiDict(self._rev_dict, self._dict)
+
+    def __eq__(self, o: object) -> bool:
+        return isinstance(o, BiDict) and self._dict == o._dict
+
 
     def __len__(self) -> int:
         return len(self._dict)
@@ -79,6 +84,9 @@ class BiDict(MutableMapping[_K, _V]):
 
     def __iter__(self) -> Iterator[_K]:
         return iter(self._dict.keys())
+
+    def __repr__(self) -> str:
+        return f"BiDict({list(self._dict.items())})"
 
 
 _Tco = TypeVar("_Tco", covariant=True)
@@ -116,6 +124,12 @@ class Ordering(Sequence[_Tco]):
 
     def __contains__(self, __item: object) -> bool:
         return __item in self._bidict.rev
+
+    def __eq__(self, o: object) -> bool:
+        return isinstance(o,Ordering) and self._bidict == o._bidict
+
+    def __repr__(self) -> str:
+        return f"Ordering({[self[i] for i in range(len(self))]})"
 
 
 if __name__ == "__main__":
